@@ -1,4 +1,4 @@
-import yaml
+
 
 class Struct:
     def __init__(self, **entries):

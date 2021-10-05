@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader, RandomSampler
 from torch.utils.data.distributed import DistributedSampler
 from tqdm import tqdm
 from transformers import WEIGHTS_NAME
-
+from luke.utils.entity_vocab import MASK_TOKEN
 import yaml
 from objectify import Struct
 from utils import set_seed
@@ -30,19 +30,16 @@ def run():
 
     set_seed(args.seed)
 
-    # args.experiment.log_parameters({p.name: getattr(args, p.name) for p in run.params})
-
-    # args.model_config.entity_vocab_size = 2
-    # entity_emb = args.model_weights["entity_embeddings.entity_embeddings.weight"]
-    # mask_emb = entity_emb[args.entity_vocab[MASK_TOKEN]].unsqueeze(0)
-    # args.model_weights["entity_embeddings.entity_embeddings.weight"] = torch.cat([entity_emb[:1], mask_emb])
-
     train_dataloader, _, _, processor = load_examples(args, "train")
     results = {}
 
     if args.do_train:
         model = LukeForNamedEntityRecognition(args, len(processor.get_labels()))
-        model.load_state_dict(torch.load(args.model_path, map_location=torch.device('cpu')),strict=False)
+        model_weights = torch.load(args.model_path, map_location=torch.device('cpu'))
+        entity_emb = model_weights["entity_embeddings.entity_embeddings.weight"]
+        mask_emb = entity_emb[0].unsqueeze(0)
+        model_weights["entity_embeddings.entity_embeddings.weight"] = torch.cat([entity_emb[:1], mask_emb])
+        model.load_state_dict(model_weights,strict=False)
         model.to(args.device)
 
         num_train_steps_per_epoch = len(train_dataloader) // args.gradient_accumulation_steps
@@ -118,7 +115,6 @@ def evaluate(args, model, fold, output_file=None):
                     predicted_sequence[span[0] + 1 : span[1]] = ["I-" + label] * (span[1] - span[0] - 1)
 
         final_predictions += predicted_sequence
-        print(example.labels)
         final_labels += example.labels
 
     # convert IOB2 -> IOB1

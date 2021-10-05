@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 from torch.nn import CrossEntropyLoss
-from transformers.modeling_roberta import RobertaConfig
 from luke.model import LukeEntityAwareAttentionModel
 
 

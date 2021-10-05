@@ -1,4 +1,4 @@
-learning_rate: 0.001
+learning_rate: 0.00001
 lr_schedule: "warmup_linear"
 weight_decay: 0.01
 max_grad_norm: 0.0
@@ -16,7 +16,7 @@ fp16_max_loss_scale: 4
 save_steps: 0
 checkpoint_file: "/home/nitheesh/Documents/projects_3/dice_loss_nlp/luke_2/output"
 data_dir: "/home/nitheesh/Documents/projects_3/dice_loss_nlp/dice_loss_for_NLP/data"
-no-train: False
+no-train: True
 do_train: True
 do_eval: True
 no-eval: False
@@ -26,8 +26,8 @@ max_mention_length: 30
 max_seq_length: 512
 no-entity-feature: True
 no-word-feature: True
-train_batch_size: 2
-num_train_epochs: 100
+train_batch_size: 4
+num_train_epochs: 10
 seed: 35
 train_on_dev_set: True
 tokenizer: ""
@@ -35,7 +35,7 @@ model_config: ""
 attention_probs_dropout_prob: 0.1
 bert_model_name: "roberta-base"
 entity_emb_size: 256
-entity_vocab_size: 500000
+entity_vocab_size: 4
 finetuning_task: null
 hidden_act: "gelu"
 hidden_dropout_prob: 0.1
@@ -56,8 +56,8 @@ type_vocab_size: 1
 use_bfloat16: False
 vocab_size: 50265
 is_decoder: False
-no_word_feature: False
-no_entity_feature: False
+no_word_feature: True
+no_entity_feature: True
 device: "cpu"
 model_path: "/home/nitheesh/Documents/projects_3/dice_loss_nlp/luke_2/luke_base_500k/pytorch_model.bin"
-output_dir: "/home/nitheesh/Documents/projects_3/dice_loss_nlp/luke_2/output"
+output_dir: "/home/nitheesh/Documents/projects_3/dice_loss_nlp/luke_2/output/"

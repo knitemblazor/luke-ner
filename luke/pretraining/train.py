@@ -8,7 +8,6 @@ import subprocess
 import time
 from argparse import Namespace
 
-import click
 import numpy as np
 import torch
 from torch.utils.tensorboard import SummaryWriter
@@ -30,67 +29,6 @@ from luke.utils.model_utils import ENTITY_VOCAB_FILE
 logger = logging.getLogger(__name__)
 
 
-@click.command()
-@click.argument("dataset_dir")
-@click.argument("output_dir", type=click.Path())
-@click.option("--multilingual", is_flag=True)
-@click.option("--sampling-smoothing", default=0.7)
-@click.option("--parallel", is_flag=True)
-@click.option("--cpu", is_flag=True)
-@click.option("--bert-model-name", default="roberta-large")
-@click.option("--entity-emb-size", default=256, type=int)
-@click.option("--batch-size", default=2048)
-@click.option("--gradient-accumulation-steps", default=1024)
-@click.option("--learning-rate", default=1e-5)
-@click.option("--lr-schedule", type=click.Choice(["warmup_constant", "warmup_linear"]), default="warmup_linear")
-@click.option("--warmup-steps", default=2500)
-@click.option("--adam-b1", default=0.9)
-@click.option("--adam-b2", default=0.999)
-@click.option("--adam-eps", default=1e-6)
-@click.option("--weight-decay", default=0.01)
-@click.option("--max-grad-norm", default=0.0)
-@click.option("--masked-lm-prob", default=0.15)
-@click.option("--masked-entity-prob", default=0.15)
-@click.option("--whole-word-masking/--subword-masking", default=True)
-@click.option("--unmasked-word-prob", default=0.1)
-@click.option("--random-word-prob", default=0.1)
-@click.option("--unmasked-entity-prob", default=0.0)
-@click.option("--random-entity-prob", default=0.0)
-@click.option("--mask-words-in-entity-span", is_flag=True)
-@click.option("--fix-bert-weights", is_flag=True)
-@click.option("--grad-avg-on-cpu/--grad-avg-on-gpu", default=False)
-@click.option("--num-epochs", default=20)
-@click.option("--global-step", default=0)
-@click.option("--fp16", is_flag=True)
-@click.option("--fp16-opt-level", default="O2", type=click.Choice(["O1", "O2"]))
-@click.option("--fp16-master-weights/--fp16-no-master-weights", default=True)
-@click.option("--fp16-min-loss-scale", default=1)
-@click.option("--fp16-max-loss-scale", default=4)
-@click.option("--local-rank", "--local_rank", default=-1)
-@click.option("--num-nodes", default=1)
-@click.option("--node-rank", default=0)
-@click.option("--master-addr", default="127.0.0.1")
-@click.option("--master-port", default="29502")
-@click.option("--log-dir", type=click.Path(), default=None)
-@click.option("--model-file", type=click.Path(exists=True), default=None)
-@click.option("--optimizer-file", type=click.Path(exists=True), default=None)
-@click.option("--scheduler-file", type=click.Path(exists=True), default=None)
-@click.option("--amp-file", type=click.Path(exists=True), default=None)
-@click.option("--save-interval-sec", default=None, type=int)
-@click.option("--save-interval-steps", default=None, type=int)
-def pretrain(**kwargs):
-    run_pretraining(Namespace(**kwargs))
-
-
-@click.command()
-@click.argument("output_dir", type=click.Path())
-@click.option("--batch-size", default=None, type=int)
-@click.option("--gradient-accumulation-steps", default=None, type=int)
-@click.option("--grad-avg-on-cpu", is_flag=True, default=None)
-@click.option("--num-nodes", default=1)
-@click.option("--node-rank", default=0)
-@click.option("--master-addr", default="127.0.0.1")
-@click.option("--master-port", default="29502")
 def resume_pretraining(output_dir: str, **kwargs):
     if "num_nodes" not in kwargs:
         kwargs["num_nodes"] = 1
@@ -132,9 +70,6 @@ def resume_pretraining(output_dir: str, **kwargs):
     run_pretraining(Namespace(**args))
 
 
-@click.command(hidden=True)
-@click.option("--local-rank", type=int)
-@click.option("--args", default="{}")
 def start_pretraining_worker(local_rank: int, args):
     args = json.loads(args)
     args["local_rank"] = local_rank
@@ -245,26 +180,26 @@ def run_pretraining(args):
         grad_avg_device=torch.device("cpu") if args.grad_avg_on_cpu else device,
     )
 
-    if args.fp16:
-        from apex import amp
-
-        if args.fp16_opt_level == "O2":
-            model, optimizer = amp.initialize(
-                model,
-                optimizer,
-                opt_level=args.fp16_opt_level,
-                master_weights=args.fp16_master_weights,
-                min_loss_scale=args.fp16_min_loss_scale,
-                max_loss_scale=args.fp16_max_loss_scale,
-            )
-        else:
-            model, optimizer = amp.initialize(
-                model,
-                optimizer,
-                opt_level=args.fp16_opt_level,
-                min_loss_scale=args.fp16_min_loss_scale,
-                max_loss_scale=args.fp16_max_loss_scale,
-            )
+    # if args.fp16:
+    #     from apex import amp
+    #
+    #     if args.fp16_opt_level == "O2":
+    #         model, optimizer = amp.initialize(
+    #             model,
+    #             optimizer,
+    #             opt_level=args.fp16_opt_level,
+    #             master_weights=args.fp16_master_weights,
+    #             min_loss_scale=args.fp16_min_loss_scale,
+    #             max_loss_scale=args.fp16_max_loss_scale,
+    #         )
+    #     else:
+    #         model, optimizer = amp.initialize(
+    #             model,
+    #             optimizer,
+    #             opt_level=args.fp16_opt_level,
+    #             min_loss_scale=args.fp16_min_loss_scale,
+    #             max_loss_scale=args.fp16_max_loss_scale,
+    #         )
 
     if args.model_file is None:
         bert_model = AutoModelForPreTraining.from_pretrained(args.bert_model_name)
@@ -278,8 +213,8 @@ def run_pretraining(args):
     if args.optimizer_file is not None:
         optimizer.load_state_dict(torch.load(args.optimizer_file, map_location="cpu"))
 
-    if args.amp_file is not None:
-        amp.load_state_dict(torch.load(args.amp_file, map_location="cpu"))
+    # if args.amp_file is not None:
+    #     amp.load_state_dict(torch.load(args.amp_file, map_location="cpu"))
 
     if args.lr_schedule == "warmup_constant":
         scheduler = get_constant_schedule_with_warmup(optimizer, num_warmup_steps=args.warmup_steps)
@@ -329,10 +264,10 @@ def run_pretraining(args):
         metadata = dict(
             global_step=global_step, model_file=model_file, optimizer_file=optimizer_file, scheduler_file=scheduler_file
         )
-        if args.fp16:
-            amp_file = f"amp_{suffix}.bin"
-            torch.save(amp.state_dict(), os.path.join(args.output_dir, amp_file))
-            metadata["amp_file"] = amp_file
+        # if args.fp16:
+        #     amp_file = f"amp_{suffix}.bin"
+        #     torch.save(amp.state_dict(), os.path.join(args.output_dir, amp_file))
+        #     metadata["amp_file"] = amp_file
         with open(os.path.join(args.output_dir, f"metadata_{suffix}.json"), "w") as f:
             json.dump(metadata, f, indent=2, sort_keys=True)
 
@@ -369,8 +304,9 @@ def run_pretraining(args):
 
             with maybe_no_sync():
                 if args.fp16:
-                    with amp.scale_loss(loss, optimizer) as scaled_loss:
-                        scaled_loss.backward()
+                    # with amp.scale_loss(loss, optimizer) as scaled_loss:
+                    #     scaled_loss.backward()
+                    pass
                 else:
                     loss.backward()
 
@@ -393,7 +329,8 @@ def run_pretraining(args):
         if accumulation_count == args.gradient_accumulation_steps:
             if args.max_grad_norm != 0.0:
                 if args.fp16:
-                    torch.nn.utils.clip_grad_norm_(amp.master_params(optimizer), args.max_grad_norm)
+                    # torch.nn.utils.clip_grad_norm_(amp.master_params(optimizer), args.max_grad_norm)
+                    pass
                 else:
                     torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
             optimizer.step()

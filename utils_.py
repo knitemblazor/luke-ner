@@ -54,7 +54,7 @@ class CoNLLProcessor(object):
         return list(self._create_examples(self._read_data(os.path.join(data_dir, "test.txt")), "test"))
 
     def get_labels(self):
-        return ["opd_ag_certificate_of_origin", "opd_ag_oth_documents", "O"]
+        return ["NIL", "MISC", "PER", "ORG", "LOC"]
 
     def _read_data(self, input_file):
         data = []
@@ -200,9 +200,9 @@ def convert_examples_to_features(
                     original_entity_spans.append(
                         (subword2token[doc_entity_start], subword2token[doc_entity_end - 1] + 1)
                     )
-
                     labels.append(entity_labels.get((doc_entity_start, doc_entity_end), 0))
                     entity_labels.pop((doc_entity_start, doc_entity_end), None)
+
 
             if len(entity_ids) == 1:
                 entity_start_positions.append(0)
@@ -235,7 +235,7 @@ def convert_examples_to_features(
                         labels=labels[start:end],
                     )
                 )
-
+        # print(entity_labels)
         # assert not entity_labels
 
     return features
